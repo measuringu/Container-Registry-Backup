@@ -1,0 +1,14 @@
+include:
+  - local: 'gitlab-ci/*.yml'
+
+variables:
+  # We need all branches
+  GIT_DEPTH: 0
+
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+stages:
+  # Grab Docker image and store it in the repo
+  - acquire

@@ -1,0 +1,44 @@
+# ---------------
+# Template Used For grabbing images from Docker hub, and storing them in the repo's container registry
+# ---------------
+
+.acquire_image_template:
+  stage: acquire
+  interruptible: true
+  tags:
+    - prod-container-build
+  # Builds from a branch commit are manually triggered by the user on Gitlab
+  when: manual
+  allow_failure: true
+  image: docker:20.10.20
+  services:
+    - docker:20.10.20-dind
+  # Builds from a branch commit are manually triggered by the user on Gitlab
+  when: manual
+  variables:
+    # Image tag example: registry.gitlab.com/measuringu/muiq/muiq1-web-app/my-branch-name:commit-sha-number
+    REPO_IMG_NAME: $CI_REGISTRY_IMAGE/$IMAGE_NAME
+    # Tell docker CLI how to talk to Docker daemon; see
+    # https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#use-docker-in-docker-executor
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_TLS_CERTDIR: ""
+    # When using dind, it's wise to use the overlayfs driver for
+    # improved performance.
+    DOCKER_DRIVER: overlay2
+  before_script:
+    # Login to Gitlab from Docker-in-Docker configured running on CI-CD server for proceeding operations
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    # Pull image from Docker hub
+    - docker build -t $REPO_IMG_NAME -f ./docker/$DOCKERFILE .
+    # Push Docker image to Gitlab-ci container registry
+    - docker push $REPO_IMG_NAME
+
+# richarvey/nginx-php-fpm:3.1.6
+acquire_php_fpm:
+  extends:
+    - .acquire_image_template
+  variables:
+    # Image tag example: registry.gitlab.com/measuringu/muiq/muiq1-web-app/my-branch-name:commit-sha-number
+    IMAGE_NAME: nginx-php-fpm:3.1.6
+    DOCKERFILE: nginx-php-fpm.Dockerfile
