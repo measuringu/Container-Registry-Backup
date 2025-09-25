@@ -1,0 +1,104 @@
+name: Acquire Container Images
+
+on:
+  # Allow manual triggering like GitLab's manual jobs
+  workflow_dispatch:
+    inputs:
+      image_to_acquire:
+        description: 'Which image to acquire'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - nginx-php-fpm
+          - node-20-slim
+
+  # Also allow triggering via push to main branch if desired
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker/**'
+      - '.github/workflows/acquire-images.yml'
+
+env:
+  REGISTRY: ghcr.io
+  ORGANIZATION: measuringu
+
+jobs:
+  acquire-nginx-php-fpm:
+    name: Acquire nginx-php-fpm Image
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.image_to_acquire == 'nginx-php-fpm' || github.event.inputs.image_to_acquire == 'both' || github.event_name == 'push' }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/nginx-php-fpm
+          tags: |
+            type=raw,value=3.1.6
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/nginx-php-fpm.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  acquire-node-20-slim:
+    name: Acquire node:20-slim Image
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.image_to_acquire == 'node-20-slim' || github.event.inputs.image_to_acquire == 'both' || github.event_name == 'push' }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/node-20-slim
+          tags: |
+            type=raw,value=20-slim
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/node-20-slim.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
