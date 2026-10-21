@@ -65,6 +65,40 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+  acquire-nginx-php-fpm-8-2-35:
+    name: Build nginx-php-fpm PHP 8.2.35
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.image_to_acquire == 'nginx-php-fpm' || github.event.inputs.image_to_acquire == 'both' || github.event_name == 'push' }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build unpublished PHP 8.2.35 fpm base
+        uses: docker/build-push-action@v5
+        with:
+          context: https://github.com/docker-library/php.git#f6048b5f6e3c2202ee082665a4ccc0d90de291a3:8.2/alpine3.23/fpm
+          load: true
+          tags: php:8.2.35-fpm-alpine3.23
+
+      - name: Build and push nginx-php-fpm 8.2.35
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/nginx-php-fpm-8.2.35.Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/nginx-php-fpm:8.2.35
+
   acquire-node-20-slim:
     name: Acquire node:20-slim Image
     runs-on: ubuntu-latest
