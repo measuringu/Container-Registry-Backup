@@ -12,6 +12,7 @@ on:
         options:
           - both
           - nginx-php-fpm
+          - nginx-php-fpm-8.2.35
           - node-20-slim
 
   # Also allow triggering via push to main branch if desired
@@ -68,7 +69,7 @@ jobs:
   acquire-nginx-php-fpm-8-2-35:
     name: Build nginx-php-fpm PHP 8.2.35
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.image_to_acquire == 'nginx-php-fpm' || github.event.inputs.image_to_acquire == 'both' || github.event_name == 'push' }}
+    if: ${{ github.event.inputs.image_to_acquire == 'nginx-php-fpm' || github.event.inputs.image_to_acquire == 'nginx-php-fpm-8.2.35' || github.event.inputs.image_to_acquire == 'both' || github.event_name == 'push' }}
     permissions:
       contents: read
       packages: write
@@ -84,18 +85,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build unpublished PHP 8.2.35 fpm base
-        uses: docker/build-push-action@v5
-        with:
-          context: https://github.com/docker-library/php.git#f6048b5f6e3c2202ee082665a4ccc0d90de291a3:8.2/alpine3.23/fpm
-          load: true
-          tags: php:8.2.35-fpm-alpine3.23
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build and push nginx-php-fpm 8.2.35
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/nginx-php-fpm-8.2.35.Dockerfile
+          # amd64 for ECS, arm64 so Apple Silicon dev machines run it natively (no Rosetta)
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.ORGANIZATION }}/nginx-php-fpm:8.2.35
 
@@ -128,11 +130,19 @@ jobs:
             type=raw,value=latest
             type=sha,prefix={{branch}}-
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/node-20-slim.Dockerfile
+          # amd64 for CI/prod builds, arm64 so Apple Silicon dev machines run it natively (no Rosetta)
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
