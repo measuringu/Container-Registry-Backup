@@ -1,7 +1,6 @@
 # Hosted nginx-php-fpm on PHP 8.2.35.
-# Official Hub tag php:8.2.35-fpm-alpine3.23 is still unpublished (docker-library/official-images#22541).
-# Build that base first, linux/amd64, from docker-library/php f6048b5 (8.2/alpine3.23/fpm), then:
-#   docker build --platform linux/amd64 -f docker/nginx-php-fpm-8.2.35.Dockerfile -t ghcr.io/measuringu/nginx-php-fpm:8.2.35 .
+# Built from the official multi-arch php:8.2.35-fpm-alpine3.23 for linux/amd64 and linux/arm64:
+#   docker buildx build --platform linux/amd64,linux/arm64 -f docker/nginx-php-fpm-8.2.35.Dockerfile -t ghcr.io/measuringu/nginx-php-fpm:8.2.35 --push .
 FROM php:8.2.35-fpm-alpine3.23
 COPY --from=richarvey/nginx-php-fpm:3.1.6 /start.sh /start.sh
 COPY --from=richarvey/nginx-php-fpm:3.1.6 /etc/nginx /etc/nginx
