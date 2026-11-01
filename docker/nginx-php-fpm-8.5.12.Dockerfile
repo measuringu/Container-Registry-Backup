@@ -10,9 +10,11 @@ COPY --from=richarvey/nginx-php-fpm:3.1.6 /usr/bin/composer /usr/bin/composer
 COPY --from=richarvey/nginx-php-fpm:3.1.6 /usr/local/etc/php-fpm.conf /usr/local/etc/php-fpm.conf
 COPY --from=richarvey/nginx-php-fpm:3.1.6 /usr/local/etc/php-fpm.d /usr/local/etc/php-fpm.d
 COPY --from=richarvey/nginx-php-fpm:3.1.6 /usr/local/etc/php/conf.d/docker-vars.ini /usr/local/etc/php/conf.d/docker-vars.ini
+# PHP 8.5 links Zend OPcache into the binary. Installing it as a shared module
+# fails with "cp: can't stat 'modules/*'". opcache.enable is already On.
 RUN apk add --no-cache nginx supervisor bash curl git icu-dev libzip-dev oniguruma-dev libxml2-dev freetype-dev libjpeg-turbo-dev libpng-dev linux-headers $PHPIZE_DEPS \
   && docker-php-ext-configure gd --with-freetype --with-jpeg \
-  && docker-php-ext-install -j$(nproc) gd pdo_mysql mysqli intl zip exif opcache \
+  && docker-php-ext-install -j$(nproc) gd pdo_mysql mysqli intl zip exif \
   && pecl install redis-6.3.0 \
   && pecl install xdebug-3.5.3 \
   && echo "extension=redis.so" > /usr/local/etc/php/conf.d/redis.ini \
