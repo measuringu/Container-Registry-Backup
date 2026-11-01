@@ -15,8 +15,8 @@ COPY --from=richarvey/nginx-php-fpm:3.1.6 /usr/local/etc/php/conf.d/docker-vars.
 RUN apk add --no-cache nginx supervisor bash curl git icu-dev libzip-dev oniguruma-dev libxml2-dev freetype-dev libjpeg-turbo-dev libpng-dev linux-headers $PHPIZE_DEPS \
   && docker-php-ext-configure gd --with-freetype --with-jpeg \
   && docker-php-ext-install -j$(nproc) gd pdo_mysql mysqli intl zip exif \
-  && pecl install redis-6.3.0 \
-  && pecl install xdebug-3.5.3 \
+  && MAKEFLAGS="-j1" pecl install redis-6.3.0 \
+  && MAKEFLAGS="-j1" pecl install xdebug-3.5.3 \
   && echo "extension=redis.so" > /usr/local/etc/php/conf.d/redis.ini \
   && echo "zend_extension=xdebug" > /usr/local/etc/php/conf.d/xdebug.ini \
   && mkdir -p /var/lib/nginx/tmp \
